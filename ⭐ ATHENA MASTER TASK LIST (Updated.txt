@@ -1,0 +1,110 @@
+⭐ ATHENA MASTER TASK LIST (Updated + Prioritized)
+(This is now the authoritative, running list — remove items as completed)
+
+🔵 1. Research Engine Foundation (Top Priority — Current Stage)
+These tasks strengthen Athena’s core research engine before autonomy.
+1.1 Data Quality & Reliability
+- [ ] Add source attribution for every fact (Wikipedia, StackOverflow, GitHub, etc.)
+- [ ] Add cross‑source confidence scoring (agreement‑based)
+- [ ] Add error handling + fallback logic for each fetcher
+- [ ] Add text cleaning/normalization for scraped content
+- [ ] Add query expansion (synonyms, related terms, variations)
+- [ ] Add fact validation (detect contradictions, remove outliers)
+- [ ] Add caching for repeated queries
+- [ ] Add retry logic for slow APIs (ArXiv, GitHub, Semantic Scholar)
+- [ ] Add structured result objects (source, text, confidence, metadata)
+1.2 Fetcher Expansion (New Items Added)
+- [x] Add ArXivFetcher
+- [x] Add GitHubFetcher
+- [ ] Add SemanticScholarFetcher
+- [ ] Add CrossRefFetcher
+- [ ] Add YouTubeTranscriptFetcher
+- [ ] Add LocalDocumentFetcher (PDFs, notes, codebases)
+1.3 Classifier Improvements
+- [ ] Improve technical‑query classifier
+- [ ] Improve scientific‑query classifier
+- [ ] Improve code‑query classifier
+- [ ] Add academic‑query classifier (for Semantic Scholar)
+- [ ] Add publication‑query classifier (for CrossRef)
+- [ ] Add video‑query classifier (for YouTube transcripts)
+- [ ] Add local‑query classifier (for local docs)
+
+🟣 2. Research Planner (Next Major Upgrade — After Foundation)
+This is the autonomy‑enabling layer.
+2.1 Planner Core
+- [ ] Build ResearchPlanner module
+- [ ] Implement query classification
+- [ ] Implement sub‑question generation
+- [ ] Implement source selection per sub‑question
+- [ ] Implement multi‑step execution plan
+- [ ] Implement cross‑verification logic
+- [ ] Implement final synthesis logic
+2.2 Planner Integration
+- [ ] Integrate planner into ResearchEngine
+- [ ] Add debug logging for planner decisions
+- [ ] Add safety checks to prevent infinite loops
+- [ ] Add “stop conditions” (enough evidence, consensus reached)
+
+🟢 3. Skill System & Routing (Parallel Priority)
+Ensures Athena’s logic loop remains clean and scalable.
+- [ ] Add debug logging to all skills
+- [ ] Add skill priority rules (research > math > summarize, etc.)
+- [ ] Add structured skill responses
+- [ ] Add skill confidence scoring
+- [ ] Add fallback skill for unknown commands
+- [ ] Add help/diagnostic skill (“What can you do?”)
+
+🟠 4. Logic Loop Enhancements
+Improves reasoning consistency and stability.
+- [ ] Add message classification before routing
+- [ ] Add system‑level guardrails (avoid hallucinations, enforce grounding)
+- [ ] Add context window trimming (smart summarization of old messages)
+- [ ] Add long‑term memory filtering (only relevant facts included)
+- [ ] Add reasoning trace mode for debugging
+- [ ] Add strict factual mode toggle
+
+🔴 5. Model Client Improvements
+Ensures stable communication with the model backend.
+- [ ] Add timeout handling
+- [ ] Add retry logic
+- [ ] Add streaming support
+- [ ] Add model‑switching support (qwen3, mistral, etc.)
+- [ ] Add token counting + truncation safety
+- [ ] Add structured error messages
+
+🟡 6. Infrastructure & Deployment
+Ensures Athena runs reliably in real environments.
+- [ ] Add logging system (info/debug/error)
+- [ ] Add configuration file (YAML/JSON)
+- [ ] Add environment variable support
+- [ ] Add health check endpoint
+- [ ] Add versioning for skills and tools
+- [ ] Add unit tests for each subsystem
+- [ ] Add integration tests for research engine
+- [ ] Add test harness for router + logic loop
+
+🟤 7. Future Autonomy Features (Post‑Planner)
+For when Athena becomes a fully autonomous research agent.
+- [ ] Add multi‑step reasoning loops
+- [ ] Add self‑correction passes
+- [ ] Add research memory for storing findings
+- [ ] Add task‑level planning
+- [ ] Add clarifying question generation
+- [ ] Add ambiguity detection
+- [ ] Add “need more data” detection
+- [ ] Add recursive research cycles
+- [ ] Add structured report generation
+
+🧩 8. Optional Enhancements (Quality of Life)
+Not required, but highly valuable.
+- [ ] Add markdown formatting to answers
+- [ ] Add code block formatting
+- [ ] Add “explain like I’m 5 / expert mode” toggles
+- [ ] Add personality tuning
+- [ ] Add voice interface
+- [ ] Add web UI
+- [ ] Add mobile UI
+- [ ] Add plugin system for new skills
+- [ ] Add analytics dashboard for research performance
+
+⭐ This is now your updated, authoritative, prioritized Athena task list.

@@ -1,0 +1,132 @@
+athena_master_task_list:
+
+  1_research_engine_foundation:
+    priority: highest
+    description: "Core research engine quality, reliability, and fetcher expansion."
+
+    data_quality_and_reliability:
+      - add_source_attribution: false
+      - add_cross_source_confidence_scoring: false
+      - add_error_handling_and_fallbacks: false
+      - add_text_cleaning_and_normalization: false
+      - add_query_expansion: false
+      - add_fact_validation_and_contradiction_detection: false
+      - add_caching_for_repeated_queries: false
+      - add_retry_logic_for_slow_apis: false
+      - add_structured_result_objects: false
+
+    fetcher_expansion:
+      arxiv_fetcher: completed
+      github_fetcher: completed
+      semantic_scholar_fetcher: false
+      crossref_fetcher: false
+      youtube_transcript_fetcher: false
+      local_document_fetcher: false
+
+    classifier_improvements:
+      improve_technical_query_classifier: false
+      improve_scientific_query_classifier: false
+      improve_code_query_classifier: false
+      add_academic_query_classifier: false
+      add_publication_query_classifier: false
+      add_video_query_classifier: false
+      add_local_query_classifier: false
+
+  2_research_planner:
+    priority: high
+    description: "Autonomy-enabling research planning system."
+
+    planner_core:
+      build_research_planner_module: false
+      implement_query_classification: false
+      implement_subquestion_generation: false
+      implement_source_selection: false
+      implement_multistep_execution_plan: false
+      implement_cross_verification_logic: false
+      implement_final_synthesis_logic: false
+
+    planner_integration:
+      integrate_planner_into_research_engine: false
+      add_debug_logging_for_planner: false
+      add_infinite_loop_protection: false
+      add_stop_conditions: false
+
+  3_skill_system_and_routing:
+    priority: high
+    description: "Ensures Athena’s logic loop remains clean and scalable."
+
+    tasks:
+      add_debug_logging_to_all_skills: false
+      add_skill_priority_rules: false
+      add_structured_skill_responses: false
+      add_skill_confidence_system: false
+      add_fallback_skill: false
+      add_help_diagnostic_skill: false
+
+  4_logic_loop_enhancements:
+    priority: medium
+    description: "Improves reasoning consistency and stability."
+
+    tasks:
+      add_message_classification_before_routing: false
+      add_system_guardrails: false
+      add_context_window_trimming: false
+      add_long_term_memory_filtering: false
+      add_reasoning_trace_mode: false
+      add_strict_factual_mode_toggle: false
+
+  5_model_client_improvements:
+    priority: medium
+    description: "Ensures stable communication with the model backend."
+
+    tasks:
+      add_timeout_handling: false
+      add_retry_logic: false
+      add_streaming_support: false
+      add_model_switching_support: false
+      add_token_counting_and_truncation_safety: false
+      add_structured_error_messages: false
+
+  6_infrastructure_and_deployment:
+    priority: medium
+    description: "Ensures Athena runs reliably in real environments."
+
+    tasks:
+      add_logging_system: false
+      add_configuration_file: false
+      add_environment_variable_support: false
+      add_health_check_endpoint: false
+      add_versioning_for_skills_and_tools: false
+      add_unit_tests: false
+      add_integration_tests: false
+      add_router_test_harness: false
+
+  7_future_autonomy_features:
+    priority: low
+    description: "For when Athena becomes a fully autonomous research agent."
+
+    tasks:
+      add_multistep_reasoning_loops: false
+      add_self_correction_passes: false
+      add_research_memory: false
+      add_task_level_planning: false
+      add_clarifying_question_generation: false
+      add_ambiguity_detection: false
+      add_need_more_data_detection: false
+      add_recursive_research_cycles: false
+      add_structured_report_generation: false
+
+  8_optional_enhancements:
+    priority: lowest
+    description: "Quality-of-life improvements."
+
+    tasks:
+      add_markdown_formatting: false
+      add_code_block_formatting: false
+      add_explain_like_im_5_and_expert_modes: false
+      add_personality_tuning: false
+      add_voice_interface: false
+      add_web_ui: false
+      add_mobile_ui: false
+      add_plugin_system: false
+      add_analytics_dashboard: false

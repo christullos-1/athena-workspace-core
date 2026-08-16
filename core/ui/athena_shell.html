@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#07070d" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <title>Athena</title>
+  <style>
+    :root {
+      --bg-0: #07070d;
+      --bg-1: #10101a;
+      --bg-2: #171724;
+      --card: rgba(22, 22, 36, 0.88);
+      --border: rgba(255, 255, 255, 0.08);
+      --text: #f4f4f8;
+      --muted: #9b9bb0;
+      --accent: #c9a84c;
+      --accent-2: #8b7cf6;
+      --assistant: #1e1e30;
+      --danger: #ff6b7a;
+      --shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      --radius: 18px;
+      --vault-width: 340px;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--bg-0);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    body {
+      background:
+        radial-gradient(circle at top, rgba(139, 124, 246, 0.18), transparent 34%),
+        radial-gradient(circle at bottom right, rgba(201, 168, 76, 0.12), transparent 28%),
+        linear-gradient(180deg, #090912 0%, #07070d 100%);
+    }
+
+    .hidden { display: none !important; }
+
+    .shell {
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+
+    #login-view {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 16px;
+      max-width: 480px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .brand { text-align: center; margin-bottom: 24px; }
+
+    .brand-mark {
+      width: 56px; height: 56px; margin: 0 auto 12px; border-radius: 18px;
+      display: grid; place-items: center; font-size: 24px; font-weight: 700;
+      color: #fff;
+      background: linear-gradient(135deg, var(--accent), #f0d998 55%, var(--accent-2));
+      box-shadow: 0 10px 30px rgba(201, 168, 76, 0.25);
+    }
+
+    .brand h1 { margin: 0; font-size: 1.55rem; }
+    .brand p { margin: 6px 0 0; color: var(--muted); font-size: 0.92rem; }
+
+    .card {
+      padding: 24px 20px;
+      border: 1px solid var(--border);
+      border-radius: calc(var(--radius) + 4px);
+      background: var(--card);
+      backdrop-filter: blur(18px);
+      box-shadow: var(--shadow);
+    }
+
+    .card h2 { margin: 0 0 8px; font-size: 1.15rem; }
+    .card .subtitle { margin: 0 0 20px; color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
+    .field { margin-bottom: 14px; }
+
+    label {
+      display: block; margin-bottom: 7px; font-size: 0.82rem;
+      color: var(--muted); letter-spacing: 0.03em; text-transform: uppercase;
+    }
+
+    input, textarea, button { font: inherit; }
+
+    input[type="text"], input[type="password"], textarea {
+      width: 100%; border: 1px solid var(--border); border-radius: 14px;
+      background: rgba(255, 255, 255, 0.03); color: var(--text);
+      padding: 14px 15px; outline: none;
+    }
+
+    input:focus, textarea:focus {
+      border-color: rgba(201, 168, 76, 0.55);
+      box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.12);
+    }
+
+    .btn {
+      border: 0; border-radius: 14px; padding: 14px 16px;
+      font-weight: 600; cursor: pointer; transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary {
+      width: 100%; color: #111;
+      background: linear-gradient(135deg, #f0d998, var(--accent));
+      box-shadow: 0 10px 24px rgba(201, 168, 76, 0.22);
+    }
+    .btn-ghost {
+      padding: 8px 12px; border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05); color: var(--muted);
+      border: 1px solid var(--border); font-size: 0.82rem;
+    }
+    .btn-small {
+      width: 100%; padding: 10px 12px; font-size: 0.82rem;
+      background: rgba(139, 124, 246, 0.15); color: var(--text);
+      border: 1px solid rgba(139, 124, 246, 0.35);
+    }
+    .error { min-height: 1.2rem; margin-top: 10px; color: var(--danger); font-size: 0.88rem; }
+
+    /* Mobile toggle */
+    .mobile-toggle {
+      display: none;
+      margin: 0 12px 8px;
+      padding: 4px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+    }
+    .mobile-toggle button {
+      flex: 1; border: 0; background: transparent; color: var(--muted);
+      padding: 10px 12px; border-radius: 999px; font-weight: 600; cursor: pointer;
+    }
+    .mobile-toggle button.active {
+      background: linear-gradient(135deg, rgba(201, 168, 76, 0.25), rgba(139, 124, 246, 0.2));
+      color: var(--text);
+    }
+
+    /* Main split layout */
+    #app-view {
+      flex: 1; min-height: 0; display: flex; flex-direction: column;
+    }
+
+    .split-layout {
+      flex: 1; min-height: 0; display: flex; gap: 0;
+      padding: 0 12px calc(12px + var(--safe-bottom));
+    }
+
+    .vault-panel, .chat-panel {
+      min-height: 0; display: flex; flex-direction: column;
+      border: 1px solid var(--border); background: rgba(16, 16, 26, 0.72);
+      backdrop-filter: blur(16px);
+    }
+
+    .vault-panel {
+      width: var(--vault-width); flex-shrink: 0;
+      border-radius: var(--radius) 0 0 var(--radius);
+      border-right: none;
+    }
+
+    .chat-panel {
+      flex: 1; border-radius: 0 var(--radius) var(--radius) 0;
+    }
+
+    .panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px 10px; border-bottom: 1px solid var(--border);
+    }
+    .panel-header h2 { margin: 0; font-size: 1rem; }
+    .panel-header p { margin: 2px 0 0; color: var(--muted); font-size: 0.78rem; }
+
+    .vault-stats {
+      padding: 0 16px 10px; color: var(--muted); font-size: 0.78rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .vault-actions { padding: 10px 16px; border-bottom: 1px solid var(--border); }
+
+    .vault-download {
+      padding: 12px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(201, 168, 76, 0.04);
+    }
+
+    .vault-download label {
+      margin-bottom: 8px;
+      font-size: 0.72rem;
+    }
+
+    .vault-download-row {
+      display: flex;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .vault-download-row input {
+      flex: 1;
+      min-width: 0;
+      padding: 11px 12px;
+      font-size: 0.88rem;
+    }
+
+    .vault-download-row .btn-download {
+      flex-shrink: 0;
+      border: 0;
+      border-radius: 12px;
+      padding: 0 14px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      color: #111;
+      background: linear-gradient(135deg, #f0d998, var(--accent));
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 132px;
+      justify-content: center;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    .vault-download-row .btn-download:disabled {
+      opacity: 0.65;
+      cursor: wait;
+      transform: none;
+    }
+
+    .download-spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(17, 17, 17, 0.25);
+      border-top-color: #111;
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .download-status {
+      min-height: 1.1rem;
+      margin-top: 8px;
+      font-size: 0.76rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    .download-status.error { color: var(--danger); }
+    .download-status.success { color: #8fd4a8; }
+
+    .vault-tree {
+      flex: 1; overflow-y: auto; padding: 10px 8px 16px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .folder-block { margin-bottom: 8px; }
+
+    .folder-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 10px; border-radius: 12px; cursor: pointer;
+      user-select: none; transition: background 0.15s ease;
+    }
+    .folder-row:hover { background: rgba(255, 255, 255, 0.04); }
+    .folder-row .icon { font-size: 1rem; width: 1.2rem; text-align: center; }
+    .folder-row .label {
+      flex: 1; font-size: 0.88rem; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .folder-row .count {
+      font-size: 0.72rem; color: var(--muted);
+      background: rgba(255, 255, 255, 0.05); padding: 2px 8px; border-radius: 999px;
+    }
+
+    .file-list { margin: 0; padding: 0 0 0 18px; list-style: none; }
+    .file-list.hidden-files { display: none; }
+
+    .file-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 7px 10px; border-radius: 10px; cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .file-row:hover { background: rgba(201, 168, 76, 0.08); }
+    .file-row .icon { font-size: 0.95rem; width: 1.2rem; text-align: center; }
+    .file-row .label {
+      flex: 1; font-size: 0.82rem; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .vault-empty {
+      padding: 24px 16px; text-align: center; color: var(--muted); font-size: 0.88rem;
+    }
+
+    .chat-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 14px 16px 10px; border-bottom: 1px solid var(--border);
+    }
+    .chat-header h2 { margin: 0; font-size: 1rem; }
+    .chat-header p { margin: 2px 0 0; color: var(--muted); font-size: 0.78rem; }
+
+    .brain-bar {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 16px; border-bottom: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.02);
+      flex-wrap: wrap;
+    }
+    .brain-bar label {
+      margin: 0; font-size: 0.72rem; text-transform: uppercase;
+      letter-spacing: 0.04em; color: var(--muted); white-space: nowrap;
+    }
+    .brain-select {
+      flex: 1; min-width: 140px;
+      border: 1px solid var(--border); border-radius: 12px;
+      background: rgba(255, 255, 255, 0.04); color: var(--text);
+      padding: 10px 12px; font-size: 0.88rem; outline: none;
+    }
+    .brain-select:focus {
+      border-color: rgba(201, 168, 76, 0.55);
+      box-shadow: 0 0 0 3px rgba(201, 168, 76, 0.12);
+    }
+    .brain-status {
+      font-size: 0.72rem; font-weight: 600; letter-spacing: 0.03em;
+      padding: 5px 10px; border-radius: 999px; white-space: nowrap;
+      background: rgba(139, 124, 246, 0.15); color: #c4b8ff;
+      border: 1px solid rgba(139, 124, 246, 0.35);
+    }
+    .brain-status.scavenger {
+      background: rgba(201, 168, 76, 0.18); color: #f0d998;
+      border-color: rgba(201, 168, 76, 0.45);
+      animation: pulse-scavenger 1.6s ease-in-out infinite;
+    }
+    @keyframes pulse-scavenger {
+      50% { opacity: 0.72; }
+    }
+
+    .messages {
+      flex: 1; min-height: 0; overflow-y: auto; padding: 12px 16px;
+      display: flex; flex-direction: column; gap: 12px;
+      scroll-behavior: smooth; -webkit-overflow-scrolling: touch;
+    }
+
+    .message {
+      max-width: 88%; padding: 12px 14px; border-radius: 18px;
+      line-height: 1.48; font-size: 0.96rem; white-space: pre-wrap; word-break: break-word;
+    }
+    .message.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #315cff, #244fe0);
+      border-bottom-right-radius: 6px;
+    }
+    .message.assistant {
+      align-self: flex-start; background: var(--assistant);
+      border: 1px solid var(--border); border-bottom-left-radius: 6px;
+    }
+    .message.assistant.streaming {
+      border-color: rgba(201, 168, 76, 0.35);
+    }
+    .message.assistant.grounding-phase {
+      color: #d4c896;
+      font-size: 0.9rem;
+      border-style: dashed;
+    }
+    .message.assistant.streaming::after {
+      content: "▍";
+      display: inline;
+      margin-left: 2px;
+      color: var(--accent);
+      animation: blink-cursor 0.9s step-end infinite;
+    }
+    @keyframes blink-cursor {
+      50% { opacity: 0; }
+    }
+    .message.system {
+      align-self: center; max-width: 100%;
+      background: rgba(255, 255, 255, 0.04); color: var(--muted);
+      font-size: 0.84rem; text-align: center; border-radius: 999px; padding: 8px 12px;
+    }
+
+    .composer {
+      display: flex; gap: 10px; align-items: flex-end;
+      padding: 12px 16px calc(12px + var(--safe-bottom));
+      border-top: 1px solid var(--border);
+    }
+    .composer textarea {
+      flex: 1; min-height: 48px; max-height: 120px; resize: none; line-height: 1.35;
+    }
+    .send-btn {
+      width: 48px; height: 48px; border: 0; border-radius: 14px;
+      background: linear-gradient(135deg, #f0d998, var(--accent));
+      color: #111; font-weight: 700; cursor: pointer; flex-shrink: 0;
+    }
+    .send-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+    .typing { color: var(--muted); font-size: 0.86rem; padding: 0 16px 8px; }
+
+    @media (max-width: 900px) {
+      .mobile-toggle { display: flex; }
+      .split-layout { padding: 0 0 calc(8px + var(--safe-bottom)); position: relative; }
+      .vault-panel, .chat-panel {
+        position: absolute; inset: 0 0 0 0;
+        width: 100%; border-radius: var(--radius); border: 1px solid var(--border);
+        transition: transform 0.28s ease, opacity 0.28s ease;
+      }
+      .vault-panel {
+        transform: translateX(-108%); opacity: 0; pointer-events: none; z-index: 2;
+      }
+      .chat-panel {
+        transform: translateX(0); opacity: 1; z-index: 1;
+      }
+      .split-layout.show-vault .vault-panel {
+        transform: translateX(0); opacity: 1; pointer-events: auto;
+      }
+      .split-layout.show-vault .chat-panel {
+        transform: translateX(108%); opacity: 0; pointer-events: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <div id="login-view">
+      <div class="brand">
+        <div class="brand-mark">A</div>
+        <h1>Athena</h1>
+        <p>Private horology assistant</p>
+      </div>
+      <div class="card">
+        <h2>Sign in</h2>
+        <p class="subtitle">Authenticate to access chat and the file vault explorer.</p>
+        <form id="login-form">
+          <div class="field">
+            <label for="username">Username</label>
+            <input id="username" name="username" type="text" autocomplete="username" required />
+          </div>
+          <div class="field">
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" required />
+          </div>
+          <button class="btn btn-primary" type="submit" id="login-btn">Continue</button>
+          <div class="error" id="login-error"></div>
+        </form>
+      </div>
+    </div>
+
+    <div id="app-view" class="hidden">
+      <div class="mobile-toggle" id="mobile-toggle">
+        <button type="button" data-panel="vault" id="toggle-vault">Vault</button>
+        <button type="button" data-panel="chat" id="toggle-chat" class="active">Chat</button>
+      </div>
+
+      <div class="split-layout" id="split-layout">
+        <aside class="vault-panel" id="vault-panel">
+          <div class="panel-header">
+            <div>
+              <h2>File Vault</h2>
+              <p>Indexed horology library</p>
+            </div>
+          </div>
+          <div class="vault-download">
+            <label for="caliber-input">Online Manual Downloader</label>
+            <div class="vault-download-row">
+              <input
+                id="caliber-input"
+                type="text"
+                placeholder="e.g. ETA 2836-2"
+                autocomplete="off"
+              />
+              <button class="btn-download" type="button" id="vault-download-btn">
+                <span id="download-btn-label">Download Caliber Sheet</span>
+              </button>
+            </div>
+            <div class="download-status" id="download-status"></div>
+          </div>
+          <div class="vault-stats" id="vault-stats">Loading vault index...</div>
+          <div class="vault-actions">
+            <button class="btn btn-small" type="button" id="vault-sync-btn">Sync new files</button>
+          </div>
+          <div class="vault-tree" id="vault-tree"></div>
+        </aside>
+
+        <section class="chat-panel" id="chat-panel">
+          <div class="chat-header">
+            <div>
+              <h2>Athena</h2>
+              <p id="chat-subtitle">Connected securely</p>
+            </div>
+            <button class="btn btn-ghost" id="logout-btn" type="button">Log out</button>
+          </div>
+          <div class="brain-bar">
+            <label for="brain-provider">Brain</label>
+            <select class="brain-select" id="brain-provider" aria-label="Select AI brain provider">
+              <option value="local" selected>Local (Ollama)</option>
+              <option value="chatgpt">ChatGPT (gpt-4o)</option>
+              <option value="gemini">Gemini (1.5 Pro)</option>
+              <option value="grok">Grok (xAI)</option>
+              <option value="copilot">Copilot (gpt-4o)</option>
+            </select>
+            <span class="brain-status" id="brain-status">LOCAL</span>
+          </div>
+          <div class="messages" id="messages"></div>
+          <div class="typing hidden" id="typing-indicator">Athena is thinking...</div>
+          <form class="composer" id="chat-form">
+            <textarea id="prompt" rows="1" placeholder="Ask Athena anything..." required></textarea>
+            <button class="send-btn" id="send-btn" type="submit" aria-label="Send">&#8593;</button>
+          </form>
+        </section>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const TOKEN_KEY = "athena_access_token";
+    const loginView = document.getElementById("login-view");
+    const appView = document.getElementById("app-view");
+    const loginForm = document.getElementById("login-form");
+    const chatForm = document.getElementById("chat-form");
+    const messagesEl = document.getElementById("messages");
+    const loginError = document.getElementById("login-error");
+    const promptEl = document.getElementById("prompt");
+    const sendBtn = document.getElementById("send-btn");
+    const loginBtn = document.getElementById("login-btn");
+    const typingIndicator = document.getElementById("typing-indicator");
+    const logoutBtn = document.getElementById("logout-btn");
+    const vaultTreeEl = document.getElementById("vault-tree");
+    const vaultStatsEl = document.getElementById("vault-stats");
+    const vaultSyncBtn = document.getElementById("vault-sync-btn");
+    const caliberInput = document.getElementById("caliber-input");
+    const vaultDownloadBtn = document.getElementById("vault-download-btn");
+    const downloadBtnLabel = document.getElementById("download-btn-label");
+    const downloadStatusEl = document.getElementById("download-status");
+    const splitLayout = document.getElementById("split-layout");
+    const toggleVaultBtn = document.getElementById("toggle-vault");
+    const toggleChatBtn = document.getElementById("toggle-chat");
+    const brainProviderEl = document.getElementById("brain-provider");
+    const brainStatusEl = document.getElementById("brain-status");
+    const chatSubtitleEl = document.getElementById("chat-subtitle");
+
+    const BRAIN_LABELS = {
+      local: "LOCAL",
+      chatgpt: "CHATGPT",
+      gemini: "GEMINI",
+      grok: "GROK",
+      copilot: "COPILOT",
+    };
+
+    let chatHistory = [];
+
+    function getBrainProvider() {
+      return brainProviderEl ? brainProviderEl.value : "local";
+    }
+
+    function setBrainStatus(label, scavenger = false) {
+      if (!brainStatusEl) return;
+      brainStatusEl.textContent = label;
+      brainStatusEl.classList.toggle("scavenger", scavenger);
+    }
+
+    function updateBrainUi() {
+      const provider = getBrainProvider();
+      const label = BRAIN_LABELS[provider] || provider.toUpperCase();
+      setBrainStatus(label, false);
+      if (chatSubtitleEl) {
+        chatSubtitleEl.textContent =
+          provider === "local"
+            ? "Connected securely — local vault"
+            : `Cloud gateway — ${label}`;
+      }
+    }
+
+    function getToken() {
+      return localStorage.getItem(TOKEN_KEY);
+    }
+
+    function setToken(token) {
+      localStorage.setItem(TOKEN_KEY, token);
+    }
+
+    function clearToken() {
+      localStorage.removeItem(TOKEN_KEY);
+    }
+
+    function authHeaders() {
+      return {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${getToken()}`,
+      };
+    }
+
+    function showLogin() {
+      loginView.classList.remove("hidden");
+      appView.classList.add("hidden");
+      messagesEl.innerHTML = "";
+      chatHistory = [];
+      loginError.textContent = "";
+    }
+
+    function showApp() {
+      loginView.classList.add("hidden");
+      appView.classList.remove("hidden");
+      appendMessage("system", "Session active. Vault explorer ready.");
+      loadVaultTree();
+      scrollToBottom();
+      promptEl.focus();
+    }
+
+    function setMobilePanel(panel) {
+      const isVault = panel === "vault";
+      splitLayout.classList.toggle("show-vault", isVault);
+      toggleVaultBtn.classList.toggle("active", isVault);
+      toggleChatBtn.classList.toggle("active", !isVault);
+    }
+
+    function fileIcon(kind, extension) {
+      if (kind === "pdf" || extension === ".pdf") return "📕";
+      if (extension === ".md") return "📝";
+      return "📄";
+    }
+
+    function renderVaultTree(data) {
+      vaultTreeEl.innerHTML = "";
+      const folders = data.folders || {};
+      const folderNames = Object.keys(folders).sort((a, b) => a.localeCompare(b));
+
+      if (!folderNames.length) {
+        vaultTreeEl.innerHTML = '<div class="vault-empty">No indexed documents yet.<br>Drop PDFs into ./athena_vault/ and tap Sync.</div>';
+        return;
+      }
+
+      folderNames.forEach((folderName) => {
+        const files = folders[folderName] || [];
+        const block = document.createElement("div");
+        block.className = "folder-block";
+
+        const folderRow = document.createElement("div");
+        folderRow.className = "folder-row";
+        folderRow.innerHTML = `
+          <span class="icon">📁</span>
+          <span class="label">${folderName}</span>
+          <span class="count">${files.length}</span>
+        `;
+
+        const fileList = document.createElement("ul");
+        fileList.className = "file-list";
+
+        files.forEach((file) => {
+          const item = document.createElement("li");
+          item.className = "file-row";
+          item.title = file.path;
+          item.innerHTML = `
+            <span class="icon">${fileIcon(file.kind, file.extension)}</span>
+            <span class="label">${file.name}</span>
+          `;
+          item.addEventListener("click", () => {
+            const query = `Using vault document "${file.name}", summarize key technical guidance.`;
+            promptEl.value = query;
+            setMobilePanel("chat");
+            promptEl.focus();
+          });
+          fileList.appendChild(item);
+        });
+
+        folderRow.addEventListener("click", () => {
+          fileList.classList.toggle("hidden-files");
+        });
+
+        block.appendChild(folderRow);
+        block.appendChild(fileList);
+        vaultTreeEl.appendChild(block);
+      });
+    }
+
+    function updateVaultStats(data) {
+      const status = data.loading ? "Syncing..." : (data.ready ? "Ready" : "Indexing");
+      vaultStatsEl.textContent =
+        `${status} · ${data.document_count || 0} docs · ${data.folder_count || 0} folders · ${data.duplicate_count || 0} duplicates skipped`;
+    }
+
+    async function loadVaultTree() {
+      const token = getToken();
+      if (!token) return;
+
+      try {
+        const response = await fetch("/api/vault/tree", { headers: authHeaders() });
+        const data = await response.json().catch(() => ({}));
+        if (response.status === 401) {
+          clearToken();
+          showLogin();
+          return;
+        }
+        if (!response.ok) throw new Error(data.detail || "Failed to load vault tree");
+        updateVaultStats(data);
+        renderVaultTree(data);
+      } catch (error) {
+        vaultStatsEl.textContent = error.message;
+      }
+    }
+
+    async function syncVault() {
+      vaultSyncBtn.disabled = true;
+      vaultSyncBtn.textContent = "Syncing...";
+      try {
+        const response = await fetch("/api/vault/sync", {
+          method: "POST",
+          headers: authHeaders(),
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.detail || "Sync failed");
+
+        const poll = setInterval(async () => {
+          const treeResp = await fetch("/api/vault/tree", { headers: authHeaders() });
+          const treeData = await treeResp.json();
+          updateVaultStats(treeData);
+          if (!treeData.loading) {
+            clearInterval(poll);
+            renderVaultTree(treeData);
+            vaultSyncBtn.disabled = false;
+            vaultSyncBtn.textContent = "Sync new files";
+          }
+        }, 2000);
+      } catch (error) {
+        vaultStatsEl.textContent = error.message;
+        vaultSyncBtn.disabled = false;
+        vaultSyncBtn.textContent = "Sync new files";
+      }
+    }
+
+    function setDownloadBusy(isBusy) {
+      vaultDownloadBtn.disabled = isBusy;
+      caliberInput.disabled = isBusy;
+      if (isBusy) {
+        downloadBtnLabel.innerHTML = '<span class="download-spinner"></span> Securing...';
+      } else {
+        downloadBtnLabel.textContent = "Download Caliber Sheet";
+      }
+    }
+
+    function setDownloadStatus(message, tone = "") {
+      downloadStatusEl.textContent = message;
+      downloadStatusEl.className = "download-status" + (tone ? ` ${tone}` : "");
+    }
+
+    async function downloadCaliberSheet() {
+      const caliber = caliberInput.value.trim();
+      if (!caliber) {
+        setDownloadStatus("Enter a caliber name first.", "error");
+        caliberInput.focus();
+        return;
+      }
+
+      setDownloadBusy(true);
+      setDownloadStatus("Searching open sources and securing PDF...");
+
+      try {
+        const response = await fetch("/api/vault/download", {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({ caliber }),
+        });
+        const data = await response.json().catch(() => ({}));
+
+        if (response.status === 401) {
+          clearToken();
+          showLogin();
+          throw new Error("Session expired. Please sign in again.");
+        }
+
+        if (!response.ok) {
+          throw new Error(data.detail || "Download request failed");
+        }
+
+        if (data.success) {
+          const saved = data.saved_path || "vault";
+          setDownloadStatus(
+            `Saved to ${saved}. Indexed and ready for chat.`,
+            "success"
+          );
+          await loadVaultTree();
+        } else {
+          const detail = (data.errors && data.errors[0]) || data.message || "No PDF found.";
+          setDownloadStatus(detail, "error");
+        }
+      } catch (error) {
+        setDownloadStatus(error.message, "error");
+      } finally {
+        setDownloadBusy(false);
+      }
+    }
+
+    function appendMessage(role, text) {
+      const bubble = document.createElement("div");
+      bubble.className = `message ${role}`;
+      bubble.textContent = text;
+      messagesEl.appendChild(bubble);
+      scrollToBottom();
+      return bubble;
+    }
+
+    let scrollScheduled = false;
+    let activeStreamBubble = null;
+
+    function scrollToBottom() {
+      if (scrollScheduled) return;
+      scrollScheduled = true;
+      requestAnimationFrame(() => {
+        scrollScheduled = false;
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        if (activeStreamBubble) {
+          activeStreamBubble.scrollIntoView({ block: "end", behavior: "instant" });
+        }
+      });
+    }
+
+    function parseSsePayload(eventText) {
+      const dataLine = eventText
+        .split("\n")
+        .map((line) => line.trim())
+        .find((line) => line.startsWith("data:"));
+
+      if (!dataLine) return null;
+
+      const payloadText = dataLine.replace(/^data:\s*/, "");
+      if (!payloadText || payloadText === "[DONE]") return null;
+
+      try {
+        return JSON.parse(payloadText);
+      } catch {
+        return null;
+      }
+    }
+
+    async function readSseChatStream(response, onToken) {
+      if (!response.body) {
+        throw new Error("Streaming is not supported in this browser");
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let fullText = "";
+
+      const consumeEvent = (eventText) => {
+        const payload = parseSsePayload(eventText);
+        if (!payload) return false;
+
+        if (payload.error) {
+          throw new Error(payload.error);
+        }
+
+        if (payload.status) {
+          const mode =
+            typeof payload.status === "string"
+              ? payload.status
+              : payload.status.mode || "[SCAVENGER MODE]";
+          setBrainStatus(mode, true);
+          if (chatSubtitleEl) {
+            const vaultDocs = payload.status.vault_documents;
+            chatSubtitleEl.textContent =
+              vaultDocs != null
+                ? `Vault fallback — ${vaultDocs} indexed manuals`
+                : "Vault fallback — local Llama3 active";
+          }
+        }
+
+        if (typeof payload.token === "string" && payload.token.length) {
+          fullText += payload.token;
+          onToken(payload.token, fullText);
+        }
+
+        return Boolean(payload.done);
+      };
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split("\n\n");
+        buffer = events.pop() || "";
+
+        for (const event of events) {
+          if (consumeEvent(event)) {
+            return fullText;
+          }
+        }
+      }
+
+      buffer += decoder.decode();
+      if (buffer.trim() && consumeEvent(buffer)) {
+        return fullText;
+      }
+
+      return fullText;
+    }
+
+    function setBusy(isBusy) {
+      sendBtn.disabled = isBusy;
+      loginBtn.disabled = isBusy;
+      typingIndicator.classList.toggle("hidden", !isBusy);
+      if (isBusy) scrollToBottom();
+    }
+
+    async function login(username, password) {
+      const response = await fetch("/token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username, password }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.detail || "Login failed");
+      return data.access_token;
+    }
+
+    async function sendChat(message) {
+      const token = getToken();
+      if (!token) {
+        showLogin();
+        throw new Error("Missing token");
+      }
+
+      const response = await fetch("/chat", {
+        method: "POST",
+        headers: {
+          ...authHeaders(),
+          "Accept": "text/event-stream",
+        },
+        body: JSON.stringify({
+          prompt: message,
+          history: chatHistory,
+          brain_provider: getBrainProvider(),
+        }),
+      });
+
+      if (response.status === 401) {
+        clearToken();
+        showLogin();
+        throw new Error("Session expired. Please sign in again.");
+      }
+
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.detail || "Chat request failed");
+      }
+
+      const assistantBubble = appendMessage("assistant", "");
+      activeStreamBubble = assistantBubble;
+      assistantBubble.classList.add("streaming");
+      updateBrainUi();
+      let firstToken = true;
+
+      try {
+        const reply = await readSseChatStream(response, (chunk) => {
+          if (firstToken) {
+            firstToken = false;
+            typingIndicator.classList.add("hidden");
+          }
+          assistantBubble.textContent += chunk;
+          scrollToBottom();
+        });
+
+        assistantBubble.classList.remove("streaming");
+        activeStreamBubble = null;
+
+        if (!reply) {
+          assistantBubble.textContent = "(empty response)";
+        }
+
+        chatHistory.push({ role: "user", content: message });
+        chatHistory.push({ role: "assistant", content: reply || "" });
+        scrollToBottom();
+        return reply;
+      } catch (error) {
+        assistantBubble.classList.remove("streaming");
+        activeStreamBubble = null;
+        assistantBubble.remove();
+        throw error;
+      }
+    }
+
+    loginForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      loginError.textContent = "";
+      setBusy(true);
+      try {
+        const token = await login(
+          document.getElementById("username").value.trim(),
+          document.getElementById("password").value
+        );
+        setToken(token);
+        showApp();
+      } catch (error) {
+        loginError.textContent = error.message;
+      } finally {
+        setBusy(false);
+      }
+    });
+
+    chatForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const message = promptEl.value.trim();
+      if (!message) return;
+
+      appendMessage("user", message);
+      promptEl.value = "";
+      promptEl.style.height = "auto";
+      setBusy(true);
+
+      try {
+        await sendChat(message);
+      } catch (error) {
+        appendMessage("system", error.message);
+      } finally {
+        setBusy(false);
+        scrollToBottom();
+      }
+    });
+
+    promptEl.addEventListener("input", () => {
+      promptEl.style.height = "auto";
+      promptEl.style.height = Math.min(promptEl.scrollHeight, 120) + "px";
+    });
+
+    logoutBtn.addEventListener("click", () => {
+      clearToken();
+      showLogin();
+    });
+
+    vaultSyncBtn.addEventListener("click", syncVault);
+    vaultDownloadBtn.addEventListener("click", downloadCaliberSheet);
+    caliberInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        downloadCaliberSheet();
+      }
+    });
+    toggleVaultBtn.addEventListener("click", () => setMobilePanel("vault"));
+    toggleChatBtn.addEventListener("click", () => setMobilePanel("chat"));
+
+    brainProviderEl.addEventListener("change", updateBrainUi);
+
+    if (getToken()) {
+      showApp();
+      updateBrainUi();
+    } else {
+      showLogin();
+    }
+  </script>
+</body>
+</html>

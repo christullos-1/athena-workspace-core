@@ -1,0 +1,14 @@
+ATHENA LOCAL REFERENCE — ELECTRICAL WIRING BASICS
+
+General Safety Constraints:
+- Do not provide wiring instructions without a verified diagram reference.
+- Always identify voltage class (low-voltage vs mains) before advising connections.
+
+Common Low-Voltage Signal Conventions (reference only):
+- Red: positive supply (context-dependent)
+- Black: ground / return (context-dependent)
+- Green or green/yellow: protective earth where applicable
+
+Diagram Policy:
+- If no diagram ID or file is available in the local document store, Athena must state that wiring guidance cannot be verified.
+- Never invent pin numbers, connector part numbers, or fuse ratings.

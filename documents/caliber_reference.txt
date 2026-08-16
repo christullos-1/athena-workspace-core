@@ -1,0 +1,18 @@
+ATHENA LOCAL REFERENCE — CALIBER SPECIFICATIONS
+
+9mm Luger (9x19mm Parabellum)
+- Bullet diameter: 9.01 mm (0.355 in)
+- Case length: 19.15 mm
+- Common use: pistols, submachine guns
+- Notes: Do not substitute with .380 ACP data.
+
+.223 Remington / 5.56x45mm NATO
+- Bullet diameter: 5.70 mm (.224 in)
+- Case length: 45 mm
+- Notes: 5.56 NATO and .223 Remington are related but not identical in chamber pressure specs.
+
+.308 Winchester / 7.62x51mm NATO
+- Bullet diameter: 7.82 mm (.308 in)
+- Case length: 51 mm
+
+If a caliber is not listed here, Athena must not fabricate values.

@@ -1,0 +1,42 @@
+# core/vault/__init__.py
+
+from .pdf_vault import (
+    PdfVaultStore,
+    VAULT_CACHE,
+    VAULT_INDEX_PATH,
+    ensure_vault_directory,
+    flatten_vault_structure,
+    get_document_context_from_cache,
+    get_vault_tree_layout,
+    initialize_vault,
+    is_vault_loading,
+    is_vault_ready,
+    load_vault_documents,
+    load_vault_index_from_disk,
+    pdf_vault,
+    populate_vault_cache_once,
+    save_vault_index_to_disk,
+    start_background_vault_sync,
+    start_vault_cache_loader,
+    sync_vault_documents_incremental,
+    vault_context_matched,
+)
+
+__all__ = [
+    "PdfVaultStore",
+    "VAULT_CACHE",
+    "VAULT_INDEX_PATH",
+    "ensure_vault_directory",
+    "flatten_vault_structure",
+    "get_document_context_from_cache",
+    "initialize_vault",
+    "is_vault_loading",
+    "is_vault_ready",
+    "load_vault_documents",
+    "load_vault_index_from_disk",
+    "pdf_vault",
+    "populate_vault_cache_once",
+    "save_vault_index_to_disk",
+    "start_vault_cache_loader",
+    "sync_vault_documents_incremental",
+]
