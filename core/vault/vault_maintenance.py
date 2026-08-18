@@ -1,47 +1,50 @@
 """
-Athena Vault Maintenance — Two-Pass Horology PDF Sorter
-Clean, unified reconstruction (August 2026)
+Athena Vault Maintenance — Deduplicate + Reference Copy Tool
+=============================================================
+Purpose (August 2026):
+  Scan the ORIGINAL source vault, detect near-duplicates, and place
+  ONE clean copy of each unique document into the structured vault.
 
-Scans the local watchmaking vault, classifies PDFs into:
-  - Interchangeability guides
-  - Reference Library books
-  - Movements / [Brand] / [Caliber_...] folders
+  Duplicate criteria (user-defined):
+    - Same filename (stem)
+    - Same file size
+    - Same page count
+    - Same / very similar text from the first 5 pages
 
-Designed to be deterministic, modular, and safe.
+  Original files are NEVER moved or deleted.
+  This gives you a clean reference set so you can safely delete
+  extra copies while going through the original list.
 """
 
 from __future__ import annotations
 
-import json
-import os
+import hashlib
 import re
 import shutil
-import sys
+from collections import defaultdict
 from pathlib import Path
 
 # ---------------------------------------------------------------------------
-# Paths (Windows-centric by design — matches your D:\Athena layout)
+# Paths
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = Path("D:/Athena")
-STAGING_DIR = PROJECT_ROOT / "athena_vault" / "Watchmaking files"
-VAULT_DIR = PROJECT_ROOT / "vault"
-STAGING_CACHE = PROJECT_ROOT / "staging_cache"
-
-LOCAL_MODEL = "llava"  # local vision model via Ollama
+SOURCE_DIR   = PROJECT_ROOT / "athena_vault" / "Watchmaking files"   # original files
+VAULT_DIR    = PROJECT_ROOT / "vault"                               # clean reference copies
 
 # ---------------------------------------------------------------------------
-# Classification keywords & brand list
+# Classification helpers (kept simple for this focused tool)
 # ---------------------------------------------------------------------------
 REFERENCE_KEYWORDS = [
     r"\bbook\b", r"encyclopedia", r"history", r"society", r"treatise",
     r"textbook", r"journal", r"magazine", r"bulletin", r"horology",
     r"clocks", r"escapement", r"annual_report", r"proceedings", r"dictionary",
+    r"lesson", r"course", r"school", r"manual", r"guideline", r"repair",
 ]
 
 INTERCHANGEABILITY_KEYWORDS = [
     r"interchange", r"interchangability", r"interchangeability", r"cross_reference",
     r"cross-reference", r"cross reference", r"inter_change", r"parts_crossing",
-    r"staff_fit", r"staff fit", r"material_cross", r"retrofit",
+    r"staff_fit", r"staff fit", r"material_cross", r"retrofit", r"parts catalog",
 ]
 
 KNOWN_BRANDS = [
@@ -50,296 +53,183 @@ KNOWN_BRANDS = [
     "peseux", "poljot", "oris", "movado", "lemania", "luch", "landeron", "iwc", "jlc",
     "heuer", "felsa", "fef", "eterna", "enicar", "elgin", "election", "ebosa", "eb",
     "esa", "cyma", "cortebert", "certina", "cartier", "cattin", "chaika", "buren",
-    "buser", "agat", "arogno", "bfg", "bestfit", "av", "as", "af",
-]
-
-CALIBER_PATTERNS = [
-    r"\bcal(?:iber|ibre)?\.?\s*([a-zA-Z0-9_\-]+)\b",
-    r"\bmov(?:t|ement)?\.?\s*([a-zA-Z0-9_\-]+)\b",
-    r"\bref\.?\s*([a-zA-Z0-9_\-]+)\b",
-    r"\b(?<!\d)(\d{4}[A-Z0-9]?|[A-Z0-9]{2,4}\d{2,4}[A-Z0-9]?)\b",
+    "buser", "agat", "arogno", "bfg", "bestfit", "av", "as", "af", "accutron",
+    "accuquartz", "greiner", "vibrograf",
 ]
 
 
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-def clean_file_string(text_string: str) -> str:
-    """Remove illegal path characters and normalise."""
-    text_string = text_string.encode("ascii", "ignore").decode("ascii")
-    return re.sub(r'[\/*?:"<>|]', "", text_string).strip().replace(" ", "_")
+def clean_name(text: str) -> str:
+    text = text.encode("ascii", "ignore").decode("ascii")
+    return re.sub(r'[\/*?:"<>|]', "", text).strip().replace(" ", "_")
 
 
-def find_windows_poppler_path() -> str | None:
-    """Locate poppler binaries on a typical Windows install."""
-    possible_roots = [
-        Path(os.environ.get("LOCALAPPDATA", "")),
-        Path("C:/Program Files"),
-        Path("C:/poppler"),
-    ]
-    for root in possible_roots:
-        if not root or not root.exists():
-            continue
-        for match in root.glob("**/pdfinfo.exe"):
-            return str(match.parent)
-    return None
-
-
-def inspect_pdf_structure(file_path: Path) -> tuple[int, str, str]:
-    """Return (page_count, first-few-pages text, filename)."""
+def get_pdf_fingerprint(file_path: Path) -> tuple[int, int, str]:
+    """Return (file_size, page_count, first_5_pages_text)."""
     try:
         import pypdf
+        size = file_path.stat().st_size
         reader = pypdf.PdfReader(str(file_path))
-        total_pages = len(reader.pages)
-        text_accumulator = []
-        for page_idx in range(min(5, total_pages)):
-            text_accumulator.append(reader.pages[page_idx].extract_text() or "")
-        return total_pages, " ".join(text_accumulator), file_path.name
+        pages = len(reader.pages)
+        text_parts = []
+        for i in range(min(5, pages)):
+            text_parts.append(reader.pages[i].extract_text() or "")
+        sample = " ".join(text_parts)
+        # Normalise whitespace for comparison
+        sample = re.sub(r"\s+", " ", sample).strip().lower()[:2000]  # first ~2k chars is enough
+        return size, pages, sample
     except Exception:
-        return 1, "", file_path.name
+        return file_path.stat().st_size, 0, ""
 
 
-def is_interchangeability_document(filename: str, sample_text: str) -> bool:
-    combined_lower = (filename + " " + sample_text).lower()
-    return any(re.search(pat, combined_lower) for pat in INTERCHANGEABILITY_KEYWORDS)
-
-
-def is_explicit_reference_book(
-    filename: str, sample_text: str, total_pages: int, has_caliber: bool
-) -> bool:
-    if total_pages > 60:
+def is_near_duplicate(fp1: tuple, fp2: tuple) -> bool:
+    """Same size + same page count + highly similar first-page text."""
+    size1, pages1, text1 = fp1
+    size2, pages2, text2 = fp2
+    if size1 != size2 or pages1 != pages2:
+        return False
+    if not text1 or not text2:
+        return size1 == size2 and pages1 == pages2  # fall back to size+pages only
+    # Simple similarity: shared prefix length or Jaccard on words
+    if text1[:300] == text2[:300]:
         return True
-    combined_lower = (filename + " " + sample_text).lower()
-    if any(re.search(pat, combined_lower) for pat in REFERENCE_KEYWORDS) and not has_caliber:
-        return True
-    return False
+    words1 = set(text1.split())
+    words2 = set(text2.split())
+    if not words1 or not words2:
+        return False
+    overlap = len(words1 & words2) / max(len(words1), len(words2))
+    return overlap > 0.85
 
 
-def extract_caliber_signature(filename: str, sample_text: str) -> str | None:
+def classify_document(filename: str, sample_text: str, page_count: int) -> str:
+    """Return top-level category: Interchangeability | Reference_Library | Movements."""
     combined = (filename + " " + sample_text).lower()
-    for pattern in CALIBER_PATTERNS:
-        match = re.search(pattern, combined)
-        if match:
-            extracted = match.group(1) if match.groups() else match.group(0)
-            if len(extracted) > 1 and not extracted.isdigit() and len(extracted) < 12:
-                return clean_file_string(extracted).upper()
-            elif extracted.isdigit() and 3 <= len(extracted) <= 5:
-                return clean_file_string(extracted).upper()
-    return None
+
+    if any(re.search(pat, combined) for pat in INTERCHANGEABILITY_KEYWORDS):
+        return "Interchangeability"
+
+    if page_count > 40 or any(re.search(pat, combined) for pat in REFERENCE_KEYWORDS):
+        return "Reference_Library"
+
+    return "Movements"
 
 
-def scan_text_for_known_brand(filename: str, sample_text: str) -> str | None:
-    combined_target = (filename + " " + sample_text).lower()
+def detect_brand(filename: str, sample_text: str) -> str:
+    combined = (filename + " " + sample_text).lower()
     for brand in KNOWN_BRANDS:
         if len(brand) <= 2:
-            # Extra protection against two-letter false positives (especially "as")
-            pattern = r"(?<![a-zA-Z])" + brand + r"(?:\s+\d+|\b)"
-            if brand == "as" and not re.search(r"\bas\s+\d+", combined_target) and brand not in filename.lower():
-                continue
+            pattern = r"(?<![a-zA-Z])" + re.escape(brand) + r"(?:\s+\d+|\b)"
         else:
-            pattern = r"\b" + brand + r"\b"
-        if re.search(pattern, combined_target):
+            pattern = r"\b" + re.escape(brand) + r"\b"
+        if re.search(pattern, combined):
             return brand.upper() if len(brand) <= 3 else brand.capitalize()
-    return None
-
-
-def parse_model_response(
-    raw_text: str, fallback_name: str, preset_brand: str | None = None
-) -> dict:
-    default_brand = preset_brand if preset_brand else "Unknown_Brand"
-    try:
-        clean_str = re.sub(r"```json\s*|\s*```", "", raw_text.strip())
-        data = json.loads(clean_str)
-        if data.get("true_title") and data["true_title"] != "Unknown":
-            if not data.get("manufacturer") or data["manufacturer"] == "Unknown_Brand":
-                data["manufacturer"] = default_brand
-            return data
-    except Exception:
-        pass
-    base_clean = Path(fallback_name).stem.replace("-", "_").replace(" ", "_")
-    return {
-        "manufacturer": default_brand,
-        "true_title": base_clean,
-        "year": "Unknown",
-        "era": "vintage",
-    }
-
-
-def process_movement_via_gpu_vision(
-    file_path: Path, preset_brand: str | None = None
-) -> dict:
-    """Optional vision fallback using local Ollama + llava."""
-    try:
-        from pdf2image import convert_from_path
-        import ollama
-
-        poppler_bin = find_windows_poppler_path()
-        pages = convert_from_path(
-            str(file_path), first_page=1, last_page=10, poppler_path=poppler_bin
-        )
-        if not pages:
-            return parse_model_response("", file_path.name, preset_brand)
-
-        STAGING_CACHE.mkdir(parents=True, exist_ok=True)
-        temp_img_path = STAGING_CACHE / f"{file_path.stem}_eval.jpg"
-
-        # Prefer a middle page if available
-        target_page = pages[0]
-        for p_idx, page in enumerate(pages):
-            if p_idx < 2 and len(pages) > 2:
-                continue
-            target_page = page
-            break
-
-        target_page.save(temp_img_path, "JPEG")
-
-        vision_prompt = (
-            "Analyze this technical watch schematic page image. "
-            "Identify the brand manufacturer name (e.g., Omega, Seiko, Bulova, Citizen, ETA) into 'manufacturer'. "
-            "Identify the exact caliber reference identifier number into 'true_title'. "
-            "Respond strictly with a clean JSON object: "
-            "{'manufacturer': '...', 'true_title': '...', 'year': '...', 'era': '...'}"
-        )
-
-        res = ollama.chat(
-            model=LOCAL_MODEL,
-            messages=[
-                {
-                    "role": "user",
-                    "content": vision_prompt,
-                    "images": [str(temp_img_path)],
-                }
-            ],
-        )
-        if temp_img_path.exists():
-            temp_img_path.unlink()
-        return parse_model_response(res["message"]["content"], file_path.name, preset_brand)
-    except Exception as e:
-        print(f"[GPU Vision Error] {e}")
-        return parse_model_response("", file_path.name, preset_brand)
+    return "Unknown_Brand"
 
 
 # ---------------------------------------------------------------------------
-# Main pipeline
+# Main logic
 # ---------------------------------------------------------------------------
-def execute_batch_grouping_pipeline() -> None:
-    print(f"[Pipeline Ingestion] Direct target sync sweeping across: {STAGING_DIR}")
-    VAULT_DIR.mkdir(parents=True, exist_ok=True)
+def run_deduplicate_and_copy() -> None:
+    print("=" * 70)
+    print("Athena — Deduplicate + Reference Copy")
+    print("Source :", SOURCE_DIR)
+    print("Target :", VAULT_DIR)
+    print("=" * 70)
 
-    all_files = [
-        f
-        for f in STAGING_DIR.rglob("*")
-        if f.is_file() and f.suffix.lower() == ".pdf" and "vault" not in f.parts
-    ]
-
-    if not all_files:
-        print("Zero target documents located.")
+    if not SOURCE_DIR.exists():
+        print("ERROR: Source directory does not exist.")
         return
 
-    print(f"Constructing profiles map for {len(all_files)} total matching files...")
+    VAULT_DIR.mkdir(parents=True, exist_ok=True)
 
-    file_profiles = []
-    caliber_groups: dict[str, int] = {}
+    # Collect every PDF from the original vault
+    all_pdfs = [
+        f for f in SOURCE_DIR.rglob("*")
+        if f.is_file() and f.suffix.lower() == ".pdf"
+    ]
+    print(f"Found {len(all_pdfs)} PDF files in source vault.\n")
 
-    # ---------- Pass 1: profile every PDF ----------
-    for idx, file_path in enumerate(all_files, 1):
-        total_pages, raw_text, filename = inspect_pdf_structure(file_path)
-        detected_brand = scan_text_for_known_brand(filename, raw_text)
-        detected_caliber = extract_caliber_signature(filename, raw_text)
-        is_interchange = is_interchangeability_document(filename, raw_text)
+    # Group by filename stem first (fast pre-filter)
+    by_stem: dict[str, list[Path]] = defaultdict(list)
+    for pdf in all_pdfs:
+        by_stem[pdf.stem.lower()].append(pdf)
 
-        is_book = False
-        if not is_interchange:
-            if total_pages > 60:
-                is_book = True
-            else:
-                combined_lower = (filename + " " + raw_text).lower()
-                if (
-                    any(re.search(pat, combined_lower) for pat in REFERENCE_KEYWORDS)
-                    and not detected_caliber
-                ):
-                    is_book = True
+    unique_representatives: list[Path] = []
+    duplicate_count = 0
 
-        profile = {
-            "path": file_path,
-            "total_pages": total_pages,
-            "raw_text": raw_text,
-            "brand": detected_brand,
-            "caliber": detected_caliber,
-            "is_interchange": is_interchange,
-            "is_book": is_book,
-        }
-        file_profiles.append(profile)
+    print("Scanning for near-duplicates (size + pages + first-5-pages text)...\n")
 
-        if detected_caliber and not is_book and not is_interchange:
-            caliber_groups[detected_caliber] = caliber_groups.get(detected_caliber, 0) + 1
+    for stem, candidates in by_stem.items():
+        if len(candidates) == 1:
+            unique_representatives.append(candidates[0])
+            continue
 
-    # ---------- Pass 2: route & copy ----------
-    print("\nProfiles built. Executing high-intelligence contextual restructuring...")
+        # Multiple files with same stem → deeper comparison
+        fingerprints = []
+        for path in candidates:
+            fp = get_pdf_fingerprint(path)
+            fingerprints.append((path, fp))
 
-    for idx, profile in enumerate(file_profiles, 1):
-        file_path = profile["path"]
-        print(f"\nProcessing File [{idx}/{len(file_profiles)}]: {file_path.name}")
+        kept = []
+        for path, fp in fingerprints:
+            is_dup = False
+            for kept_path, kept_fp in kept:
+                if is_near_duplicate(fp, kept_fp):
+                    is_dup = True
+                    duplicate_count += 1
+                    print(f"  DUPLICATE of {kept_path.name}: {path.name}")
+                    break
+            if not is_dup:
+                kept.append((path, fp))
 
-        if profile["is_interchange"]:
-            print(" -> Context Profile: Interchangeability guide. Routing to Interchangeability hub.")
+        for path, _ in kept:
+            unique_representatives.append(path)
+
+    print(f"\nUnique documents to copy : {len(unique_representatives)}")
+    print(f"Duplicates skipped       : {duplicate_count}\n")
+
+    # Copy one clean version of each unique document
+    print("Copying unique files into structured vault...\n")
+
+    for idx, src in enumerate(unique_representatives, 1):
+        size, pages, sample = get_pdf_fingerprint(src)
+        category = classify_document(src.name, sample, pages)
+        brand = detect_brand(src.name, sample)
+
+        if category == "Interchangeability":
             target_folder = VAULT_DIR / "Interchangeability"
-            target_folder.mkdir(parents=True, exist_ok=True)
-            new_name = f"vintage_{clean_file_string(file_path.stem)}_Interchange.pdf"
-            new_path = target_folder / new_name
-
-        elif profile["is_book"]:
-            print(" -> Context Profile: Horology Publication volume. Routing to Reference Library.")
+            new_name = f"{clean_name(src.stem)}_Interchange.pdf"
+        elif category == "Reference_Library":
             target_folder = VAULT_DIR / "Reference_Library"
-            target_folder.mkdir(parents=True, exist_ok=True)
-            new_name = f"vintage_{clean_file_string(file_path.stem)}_Publication.pdf"
-            new_path = target_folder / new_name
+            # Preserve original parent folder name if meaningful
+            parent_name = clean_name(src.parent.name) if src.parent != SOURCE_DIR else "General"
+            target_folder = target_folder / parent_name
+            new_name = f"{clean_name(src.stem)}.pdf"
+        else:  # Movements
+            target_folder = VAULT_DIR / "Movements" / brand
+            new_name = f"{clean_name(src.stem)}.pdf"
 
-        else:
-            # Movement document — try to resolve brand + caliber
-            if not profile["brand"] or not profile["caliber"]:
-                metadata = process_movement_via_gpu_vision(
-                    file_path, preset_brand=profile["brand"]
-                )
-                brand = profile["brand"] or metadata.get("manufacturer", "Unknown_Brand")
-                caliber = profile["caliber"] or metadata.get("true_title", "Unknown")
-            else:
-                brand = profile["brand"]
-                caliber = profile["caliber"]
+        target_folder.mkdir(parents=True, exist_ok=True)
+        dest = target_folder / new_name
 
-            clean_mfg = (
-                clean_file_string(brand).upper()
-                if len(brand) <= 3
-                else clean_file_string(brand).capitalize()
-            )
-            clean_cal = clean_file_string(caliber).upper()
-
-            if caliber_groups.get(caliber, 0) > 1 and clean_cal != "UNKNOWN":
-                target_folder = VAULT_DIR / "Movements" / clean_mfg / f"Caliber_{clean_cal}"
-                print(
-                    f" -> Group Trigger: Multiple documents found for Caliber {clean_cal}. "
-                    "Creating dynamic bundle folder."
-                )
-            else:
-                target_folder = VAULT_DIR / "Movements" / clean_mfg
-
-            target_folder.mkdir(parents=True, exist_ok=True)
-            new_name = f"vintage_{clean_mfg}_{clean_cal}.pdf"
-            new_path = target_folder / new_name
-
-        # Avoid overwrite collisions
-        if new_path.exists() and new_path != file_path:
-            new_name = f"{Path(new_name).stem}_{idx}.pdf"
-            new_path = target_folder / new_name
+        # Final safety: never overwrite an existing clean copy
+        if dest.exists():
+            dest = target_folder / f"{dest.stem}_{idx}.pdf"
 
         try:
-            shutil.copy2(str(file_path), str(new_path))
-            print(
-                f"[Success] Structured into: vault/{target_folder.relative_to(VAULT_DIR)}\\{new_name}"
-            )
+            shutil.copy2(src, dest)
+            print(f"[{idx:4d}/{len(unique_representatives)}] {src.name}")
+            print(f"         → {dest.relative_to(VAULT_DIR)}")
         except Exception as e:
-            print(f"[Disk Warning]: {e}")
+            print(f"  ERROR copying {src.name}: {e}")
+
+    print("\n" + "=" * 70)
+    print("Done.")
+    print(f"Clean reference copies are in: {VAULT_DIR}")
+    print("Original files were left completely untouched.")
+    print("You can now use this clean set as your reference while manually")
+    print("deleting extra copies from the original vault.")
+    print("=" * 70)
 
 
 if __name__ == "__main__":
-    execute_batch_grouping_pipeline()
+    run_deduplicate_and_copy()
